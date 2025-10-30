@@ -4,8 +4,8 @@
   "description": "瓦力 SDK TypeScript 实现",
   "version": "1.0.18",
   "author": {
-    "name": "zhoujingtao",
-    "email": "zhoujingtao@xmov.ai"
+    "name": "qindongxu",
+    "email": "qindongxu@xmov.ai"
   },
   "license": "MIT",
   "main": "./dist/index.js",
