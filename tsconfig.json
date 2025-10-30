@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "rootDir": ".",
+    "lib": ["DOM", "ESNext.AsyncIterable", "WebWorker", "ESNext"],
+    "types": ["./src/types/index.d.ts", "./src/types/vite-worker.d.ts"],
+    "skipLibCheck": true
+  },
+  "include": ["./index.ts", "./index.d.ts", "./src/**/*.ts", "./src/**/*.d.ts"],
+  "exclude": ["node_modules"]
+}
