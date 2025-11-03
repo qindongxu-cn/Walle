@@ -2,10 +2,10 @@
   "name": "@xmov/walle",
   "private": false,
   "description": "瓦力 SDK TypeScript 实现",
-  "version": "1.0.18",
+  "version": "2.0.1",
   "author": {
-    "name": "qindongxu",
-    "email": "qindongxu@xmov.ai"
+    "name": "郑林雄、秦东旭",
+    "email": "zhoujingtao@xmov.ai"
   },
   "license": "MIT",
   "main": "./dist/index.js",

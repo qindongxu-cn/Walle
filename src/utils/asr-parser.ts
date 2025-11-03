@@ -10,13 +10,13 @@
  */
 function isASRV2(data: unknown): data is WalleSpec.ASRResultV2 {
   return (
-    typeof data === 'object' &&
+    typeof data === "object" &&
     data !== null &&
-    'action' in data &&
-    (data as any).action === 'asr' &&
-    'data' in data &&
-    typeof (data as any).data === 'string'
-  )
+    "action" in data &&
+    (data as any).action === "asr" &&
+    "data" in data &&
+    typeof (data as any).data === "string"
+  );
 }
 
 /**
@@ -26,12 +26,12 @@ function isASRV2(data: unknown): data is WalleSpec.ASRResultV2 {
  */
 function isASRV1(data: unknown): data is WalleSpec.ASRResult {
   return (
-    typeof data === 'object' &&
+    typeof data === "object" &&
     data !== null &&
-    'text' in data &&
-    'filtered' in data &&
-    typeof (data as any).filtered === 'string'
-  )
+    "text" in data &&
+    "filtered" in data &&
+    typeof (data as any).filtered === "string"
+  );
 }
 
 /**
@@ -41,14 +41,16 @@ function isASRV1(data: unknown): data is WalleSpec.ASRResult {
  */
 function convertV2ToV1(v2Data: WalleSpec.ASRResultV2): WalleSpec.ASRResult {
   try {
-    const parsedData = JSON.parse(v2Data.data) as WalleSpec.ASRResultV2Data
+    const parsedData = JSON.parse(v2Data.data) as WalleSpec.ASRResultV2Data;
 
     return {
       text: parsedData.text,
-      filtered: parsedData.filtered
-    }
+      filtered: parsedData.filtered,
+    };
   } catch (error) {
-    throw new Error(`无法解析ASR版本2数据: ${error instanceof Error ? error.message : '未知错误'}`)
+    throw new Error(
+      `无法解析ASR版本2数据: ${error instanceof Error ? error.message : "未知错误"}`
+    );
   }
 }
 
@@ -59,31 +61,33 @@ function convertV2ToV1(v2Data: WalleSpec.ASRResultV2): WalleSpec.ASRResult {
  * @throws 当数据格式不符合任何已知版本时抛出错误
  */
 export function parseASRResult(rawData: string | unknown): WalleSpec.ASRResult {
-  let parsedData: unknown
+  let parsedData: unknown;
 
   // 如果是字符串，先解析为对象
-  if (typeof rawData === 'string') {
+  if (typeof rawData === "string") {
     try {
-      parsedData = JSON.parse(rawData)
+      parsedData = JSON.parse(JSON.parse(rawData).data);
     } catch (error) {
-      throw new Error(`无法解析ASR JSON数据: ${error instanceof Error ? error.message : '未知错误'}`)
+      throw new Error(
+        `无法解析ASR JSON数据: ${error instanceof Error ? error.message : "未知错误"}`
+      );
     }
   } else {
-    parsedData = rawData
+    parsedData = rawData;
   }
 
   // 检查是否为版本1格式
   if (isASRV1(parsedData)) {
-    return parsedData
+    return parsedData;
   }
 
   // 检查是否为版本2格式
   if (isASRV2(parsedData)) {
-    return convertV2ToV1(parsedData)
+    return convertV2ToV1(parsedData);
   }
 
   // 如果都不匹配，抛出错误
-  throw new Error('无法识别的ASR数据格式，请检查数据结构是否正确')
+  throw new Error("无法识别的ASR数据格式，请检查数据结构是否正确");
 }
 
 /**
@@ -91,32 +95,34 @@ export function parseASRResult(rawData: string | unknown): WalleSpec.ASRResult {
  * @param rawData 原始ASR数据
  * @returns 扩展信息对象，如果不是版本2则返回null
  */
-export function getASRV2ExtendedInfo(rawData: string | unknown): { sid: string; speak_index: string } | null {
-  let parsedData: unknown
+export function getASRV2ExtendedInfo(
+  rawData: string | unknown
+): { sid: string; speak_index: string } | null {
+  let parsedData: unknown;
 
   // 如果是字符串，先解析为对象
-  if (typeof rawData === 'string') {
+  if (typeof rawData === "string") {
     try {
-      parsedData = JSON.parse(rawData)
+      parsedData = JSON.parse(rawData);
     } catch {
-      return null
+      return null;
     }
   } else {
-    parsedData = rawData
+    parsedData = rawData;
   }
 
   // 只有版本2才有扩展信息
   if (!isASRV2(parsedData)) {
-    return null
+    return null;
   }
 
   try {
-    const v2Data = JSON.parse(parsedData.data) as WalleSpec.ASRResultV2Data
+    const v2Data = JSON.parse(parsedData.data) as WalleSpec.ASRResultV2Data;
     return {
       sid: v2Data.sid,
-      speak_index: v2Data.speak_index
-    }
+      speak_index: v2Data.speak_index,
+    };
   } catch {
-    return null
+    return null;
   }
 }
