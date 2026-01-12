@@ -7,7 +7,7 @@ export default defineConfig({
       entry: 'index.ts',
       name: 'Walle',
       formats: ['es', 'cjs'],
-      fileName: (format) => (format === 'es' ? 'index.mjs' : 'index.js')
+      fileName: format => (format === 'es' ? 'index.mjs' : 'index.js')
     },
     sourcemap: true,
     rollupOptions: {

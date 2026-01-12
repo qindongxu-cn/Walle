@@ -42,7 +42,6 @@ function isASRV1(data: unknown): data is WalleSpec.ASRResult {
 function convertV2ToV1(v2Data: WalleSpec.ASRResultV2): WalleSpec.ASRResult {
   try {
     const parsedData = JSON.parse(v2Data.data) as WalleSpec.ASRResultV2Data
-
     return {
       text: parsedData.text,
       filtered: parsedData.filtered

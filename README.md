@@ -4,33 +4,77 @@
 
 《瓦力》项目是一个实现了对特定音频、视频或语音识别结果流数据的解码，并对开发者提供了部分低级接口的工具库。
 
-## 2. 目录结构
+## 2. 版本说明
+
+- **1._._ 系列**: 对应瓦力硬件 v0 协议。
+- **2._._ 系列**: 对应瓦力硬件 v1 协议。
+- **3._._ 系列**: 兼容瓦力硬件 v0 和 v1 协议。
+
+## 3. 目录结构
 
 ```ts
-- src                // 根目录
-  - decoders         // 解码器
-  - renderers        // 调试渲染器
-  - utils            // 内部工具
-  - workers          // 解码线程
-  - client.ts        // 客户端代码（是的，瓦力可以有服务端模式，但是目前暂无实现）
-  - frame-helper.ts  // 帧工具类
-  - index.d.ts       // 类型声明
-  - index.ts         // 导出文件
-  - package.json     // 这个不用解释了吧
-  - tsconfig.json    // 这个也不用解释了吧
+;-src - // 根目录
+  decoders - // 解码器
+  renderers - // 调试渲染器
+  utils - // 内部工具
+  workers - // 解码线程
+  client.ts - // 客户端代码（是的，瓦力可以有服务端模式，但是目前暂无实现）
+  frame -
+  helper.ts - // 帧工具类
+  index.d.ts - // 类型声明
+  index.ts - // 导出文件
+  package.json - // 这个不用解释了吧
+  tsconfig.json // 这个也不用解释了吧
 ```
 
-## 3. 协议
+## 4. 协议
 
-### 3.1 连接
+### 4.1 连接
 
 瓦力 SDK 通过 `WebSocket` 与瓦力服务建立连接
 
-### 3.2 心跳
+### 4.2 心跳
 
 暂无规定
 
-### 3.3 视频帧
+### 4.3 自动重连
+
+瓦力 SDK 支持自动重连功能，当连接意外断开时会自动尝试重新连接。
+
+#### 触发条件
+
+- 连接意外断开（非主动调用 `close()` 方法）
+- 连接 URL 已保存（通过 `connect()` 方法传入）
+- 当前未处于重连状态
+
+#### 重连策略
+
+SDK 采用渐进式重连策略，根据重连次数自动调整重连间隔：
+
+- **第 1~10 次**：间隔 5 秒进行重连
+- **第 11~30 次**：间隔 10 秒进行重连
+- **第 31 次及以上**：间隔 60 秒进行重连
+
+#### 不会触发重连的情况
+
+- 主动调用 `close()` 方法断开连接
+- 正在重连过程中
+- 没有保存连接 URL（未调用过 `connect()` 或已清除）
+
+#### 重连成功后的行为
+
+- 重连计数器自动清零
+- 触发 `open` 事件
+- 触发 `statechange` 事件（状态变为 `WebSocket.OPEN`）
+- 恢复心跳机制
+
+#### 注意事项
+
+- 重连失败时会在控制台输出重连次数日志，不会抛出异常
+- 重连过程中会静默处理 WebSocket 连接失败的错误，避免在控制台产生过多错误信息
+- 调用 `close()` 方法主动断开连接后，需要重新调用 `connect()` 才能再次连接
+
+### 4.4 视频帧
 
 #### 事件类型: `MessageEvent<Blob>`
 
@@ -38,7 +82,7 @@
 
 | 字段名称   | 字节长度              | 字段含义               |
 | ---------- | --------------------- | ---------------------- |
-| service_id | 4                     | 数据帧类型             |
+| type       | 4                     | 数据帧类型             |
 | index      | 8                     | 图像帧序               |
 | data_len   | 4                     | 图像数据长度           |
 | img_width  | 4                     | 图像宽度               |
@@ -56,7 +100,9 @@
 | mouth_y    | 4                     | 最初起始 y 坐标        |
 | video_data | 总长度 - 以上数据长度 | 视频帧编码格式 (H.264) |
 
-### 3.4 音频帧
+- 文档参考：[walle-V1 文档](https://gxhdvps5xn.feishu.cn/wiki/LuREwS3FbiTwkIkJTiicOntjnhe)
+
+### 4.5 音频帧
 
 #### 事件类型: `MessageEvent<Blob>`
 
@@ -64,12 +110,12 @@
 
 | 字段名称   | 字节长度              | 字段含义                                            |
 | ---------- | --------------------- | --------------------------------------------------- |
-| service_id | 4                     | 数据帧类型                                          |
+| type       | 4                     | 数据帧类型                                          |
 | data_len   | 4                     | 音频数据长度                                        |
 | vad_status | 4                     | VAD 状态值 (0: None, 1: Begin, 2: Continue, 3: End) |
 | audio_data | 总长度 - 以上数据长度 | 音频数据负载                                        |
 
-### 3.5 语音识别结果
+### 4.6 语音识别结果
 
 #### 事件类型: `MessageEvent<string>`
 
@@ -100,7 +146,7 @@
 }
 ```
 
-## 4. 调用样例
+## 5. 调用样例
 
 `main.vue`
 
@@ -118,8 +164,7 @@ import { WalleClient } from 'walle'
 const canvasRef = shallowRef<HTMLCanvasElement>()
 
 onMounted(async () => {
-  if (!canvasRef.value)
-    return
+  if (!canvasRef.value) return
 
   // 直接实例化
   const client = new WalleClient()
@@ -129,7 +174,7 @@ onMounted(async () => {
 
   // 可选: 渲染调试信息（包括人脸框、FPS 等）
   client.renderTo(canvasRef.value, {
-    fps: true, // 可选: 渲染 FPS 值
+    fps: true // 可选: 渲染 FPS 值
   })
 
   // 可选: 取消渲染调试信息
@@ -147,7 +192,7 @@ onMounted(async () => {
   const ctx = canvasRef.value.getContext('2d')
 
   // 订阅视频帧（你可以自行绘制解码后的视频帧）
-  client.subject('videoframe').subscribe((video) => {
+  client.subject('videoframe').subscribe(video => {
     ctx.clearReact(0, 0, ctx.canvas.width, ctx.canvas.height)
     ctx.drawImage(video.frame, 0, 0)
     // 注意！当你订阅 frame 之后，必须在使用后销毁 frame！
@@ -155,12 +200,12 @@ onMounted(async () => {
   })
 
   // 订阅音频帧（音频帧可能需要根据业务要求发送给单独的唤醒服务）
-  client.subject('audioframe').subscribe((audio) => {
+  client.subject('audioframe').subscribe(audio => {
     someAwakenServer.send(audio.frame)
   })
 
   // 订阅语音识别结果（关于 ASR 识别对象的更详细信息请参见其 TS 声明）
-  client.subject('asrResult').subscribe((result) => {
+  client.subject('asrResult').subscribe(result => {
     console.log(result.filtered)
   })
 
@@ -168,15 +213,15 @@ onMounted(async () => {
 })
 ```
 
-## 5. SDK 开发指南
+## 6. SDK 开发指南
 
-### 5.1 解码器
+### 6.1 解码器
 
 重点关注 `src/decoders` 下对应的解码器类中的 `#getMeta` 私有方法，该方法实现解码器对二进制内容的文件头解析，是解码器获取实际内容的根基。
 
 此外，你需要实现 `decode` 方法以便在 `Worker` 中调用，以及根据需要暴露对应的数据事件。
 
-### 5.2 RxJS
+### 6.2 RxJS
 
 为什么选择 `RxJS` 而不是 `EventListener` 风格？
 
@@ -187,7 +232,7 @@ onMounted(async () => {
 `html`
 
 ```html
-<input type="text" id="searchInput">
+<input type="text" id="searchInput" />
 ```
 
 `typescript`
@@ -198,25 +243,23 @@ let lastRequest: string = ''
 
 const searchInput = document.getElementById('searchInput')
 
-searchInput.addEventListener('input', (e) => {
+searchInput.addEventListener('input', e => {
   const query = e.target.value.trim()
   // 1. 手动过滤条件
-  if (query.length < 3)
-    return
+  if (query.length < 3) return
 
   // 2. 手动防抖逻辑
   clearTimeout(timer)
   timer = setTimeout(() => {
     // 3. 避免重复请求
-    if (lastRequest === query)
-      return
+    if (lastRequest === query) return
     lastRequest = query
     // 实际请求逻辑
     fetch(`/search?q=${query}`)
       .then(response => response.json())
-      .then(data => console.log("结果:", data))
+      .then(data => console.log('结果:', data))
       // 4. 需单独错误处理
-      .catch(err => console.error("请求失败", err))
+      .catch(err => console.error('请求失败', err))
   }, 500)
 })
 
@@ -235,13 +278,14 @@ const searchInput = document.getElementById('searchInput')
 
 // 创建事件流
 const search$ = fromEvent(searchInput, 'input').pipe(
-  map(e => e.target.value.trim()),           // 提取值
-  filter(query => query.length >= 3),        // 自动过滤
-  debounceTime(500),                         // 自动防抖
-  distinctUntilChanged(),                    // 忽略相同值
-  switchMap((query) => {                     // 自动取消未完成请求
+  map(e => e.target.value.trim()), // 提取值
+  filter(query => query.length >= 3), // 自动过滤
+  debounceTime(500), // 自动防抖
+  distinctUntilChanged(), // 忽略相同值
+  switchMap(query => {
+    // 自动取消未完成请求
     return from(fetch(`/search?q=${query}`).then(res => res.json()))
-  }),
+  })
 )
 
 // 统一订阅管理
@@ -256,10 +300,10 @@ subscription.unsubscribe()
 
 代码简单而优雅，当然，这有赖于开发者对 RxJS 操作符的了解，存在一定开发门槛。但我相信，在应对后续越来越复杂的业务逻辑时，这种投入绝对是值得的。
 
-### 5.3 最佳实践
+### 6.3 最佳实践
 
-  1. 使用 `TypeScript` 进行开发
-  2. 不要节省字数，成员或方法的命名应该表明其意图
+1. 使用 `TypeScript` 进行开发
+2. 不要节省字数，成员或方法的命名应该表明其意图
 
 ```typescript
 // Bad ×
